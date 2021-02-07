@@ -1,0 +1,129 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+  # The most common configuration options are documented and commented below.
+  # For a complete reference, please see the online documentation at
+  # https://docs.vagrantup.com.
+
+  # first VM, pay station 
+  config.vm.define "pay" do |pay|
+    pay.vm.box = "virtualbox_windows-10"
+    pay.vm.hostname = "pay-local"
+    pay.vm.network "forwarded_port", guest: 3389, host: 3398
+    # the IP address of the host computer should be 10.0.2.2
+    # we're specifying a private_network so the 2 tablets can 
+    # communicate with each other
+    pay.vm.network "private_network", ip: "10.75.2.10"
+
+    pay.vm.provider "virtualbox" do |vb|
+      vb.memory = 1024
+      vb.cpus = 1
+      vb.customize ["modifyvm", :id, "--usbxhci", "on"]
+    end
+
+    # provisioners (temporary as we want to shift this to the image build)
+    # download virtualhere client
+    pay.vm.provision "shell", path: "./scripts/Install-VirtualHereClient.ps1"
+    # copy smart card driver
+    pay.vm.provision "file", source: "../../../../tools/AU9540_2.0.17.1", destination: "C:/tempDrivers/smartcard-drivers"
+    # install smartCard driver
+    pay.vm.provision "shell", path: "./scripts/Install-SmartCardDriver.ps1"
+    # copy test scale app
+    pay.vm.provision "file", source: "../../../slimmingworld.xpressweigh.hardware/src/SlimmingWorld.Windows.SmartCardDemo/bin/Debug/net472", destination: "C:/testSmartCard"
+
+  end
+
+
+  # second VM, weigh station 
+  config.vm.define "weigh" do |weigh|
+    weigh.vm.box = "virtualbox_windows-10"
+    weigh.vm.hostname = "weigh-local"
+    weigh.vm.network "forwarded_port", guest: 3389, host: 3397
+    # the IP address of the host computer should be 10.0.2.2
+    # we're specifying a private_network so the 2 tablets can 
+    # communicate with each other
+    weigh.vm.network "private_network" , ip: "10.75.2.11"	
+    
+    weigh.vm.provider "virtualbox" do |vb|
+      vb.memory = 1024
+      vb.cpus   = 1
+      vb.customize ["modifyvm", :id, "--usbxhci", "on"]
+    end
+
+    # provisioners (temporary as we want to shift this to the image build)
+    # download virtualhere client
+    weigh.vm.provision "shell", path: "./scripts/Install-VirtualHereClient.ps1"
+    # install scale driver
+    weigh.vm.provision "shell", path: "./scripts/Install-ScaleDriver.ps1"
+    # copy test scale app
+    weigh.vm.provision "file", source: "../../../slimmingworld.xpressweigh.hardware/src/SlimmingWorld.Windows.ScalesDemo/bin/Debug/net472", destination: "C:/testScale"
+    # copy smart carcd driver
+    # weigh.vm.provision "file", source: "../../../../tools/AU9540_2.0.17.1", destination: "C:/tempDrivers/smartcard-drivers"
+    # install smartCard driver
+    weigh.vm.provision "shell", path: "./scripts/Install-SmartCardDriver.ps1"
+    # copy test smartCard app
+    weigh.vm.provision "file", source: "../../../slimmingworld.xpressweigh.hardware/src/SlimmingWorld.Windows.SmartCardDemo/bin/Debug/net472", destination: "C:/testSmartCard"
+
+  end
+
+
+
+  # Disable automatic box update checking. If you disable this, then
+  # boxes will only be checked for updates when the user runs
+  # `vagrant box outdated`. This is not recommended.
+  # config.vm.box_check_update = false
+
+  # Create a forwarded port mapping which allows access to a specific port
+  # within the machine from a port on the host machine. In the example below,
+  # accessing "localhost:8080" will access port 80 on the guest machine.
+  # NOTE: This will enable public access to the opened port
+  # config.vm.network "forwarded_port", guest: 80, host: 8080
+
+  # Create a forwarded port mapping which allows access to a specific port
+  # within the machine from a port on the host machine and only allow access
+  # via 127.0.0.1 to disable public access
+  # config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
+
+  # Create a private network, which allows host-only access to the machine
+  # using a specific IP.
+  # config.vm.network "private_network", ip: "192.168.33.10"
+
+  # Create a public network, which generally matched to bridged network.
+  # Bridged networks make the machine appear as another physical device on
+  # your network.
+  # config.vm.network "public_network"
+
+  # Share an additional folder to the guest VM. The first argument is
+  # the path on the host to the actual folder. The second argument is
+  # the path on the guest to mount the folder. And the optional third
+  # argument is a set of non-required options.
+  # config.vm.synced_folder "../data", "/vagrant_data"
+
+  # Provider-specific configuration so you can fine-tune various
+  # backing providers for Vagrant. These expose provider-specific options.
+  # Example for VirtualBox:
+  #
+  # config.vm.provider "virtualbox" do |vb|
+  #   # Display the VirtualBox GUI when booting the machine
+  #   vb.gui = true
+  #
+  #   # Customize the amount of memory on the VM:
+  #   vb.memory = "1024"
+  # end
+  #
+  # View the documentation for the provider you are using for more
+  # information on available options.
+
+  # Enable provisioning with a shell script. Additional provisioners such as
+  # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
+  # documentation for more information about their specific syntax and use.
+  # config.vm.provision "shell", inline: <<-SHELL
+  #   apt-get update
+  #   apt-get install -y apache2
+  # SHELL
+end
